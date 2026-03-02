@@ -50,6 +50,20 @@ interface RecentSync {
   success: boolean;
 }
 
+function formatMetricTimestamp(ts?: string): string {
+  if (!ts) return '-';
+  const hasTimezone = /[zZ]|[+-]\d{2}:\d{2}$/.test(ts);
+  const normalized = hasTimezone ? ts : `${ts}Z`;
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) return ts;
+  return parsed.toLocaleString('ko-KR', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 function StatCard({
   title,
   value,
@@ -118,7 +132,7 @@ export const MetricsDashboard: React.FC = () => {
       setRecentSyncs(
         syncs.map((s: any) => ({
           ...s,
-          displayTime: s.timestamp ? new Date(s.timestamp).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-',
+          displayTime: formatMetricTimestamp(s.timestamp),
           faq_count: s.faq_count ?? 0,
         }))
       );

@@ -5,7 +5,7 @@
 
 import json
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional, Dict, List
 from dataclasses import dataclass, asdict
@@ -73,6 +73,36 @@ class ChatMetric:
 
 class MetricsCollector:
     """메트릭 수집기."""
+
+    @staticmethod
+    def _parse_timestamp(raw: str) -> datetime:
+        """ISO 타임스탬프를 비교 가능한 naive UTC datetime으로 변환."""
+        dt = datetime.fromisoformat(raw)
+        if dt.tzinfo is not None:
+            return dt.astimezone(timezone.utc).replace(tzinfo=None)
+        return dt
+
+    @staticmethod
+    def _read_recent_from_file(file_path: Path, limit: int) -> List[Dict]:
+        """JSONL 파일에서 최근 N개 레코드 조회 (시간순 정렬)."""
+        rows: List[Dict] = []
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        data = json.loads(line)
+                        rows.append(data)
+                    except json.JSONDecodeError:
+                        continue
+        except FileNotFoundError:
+            return []
+
+        rows.sort(
+            key=lambda r: MetricsCollector._parse_timestamp(str(r.get("timestamp", "")))
+            if r.get("timestamp")
+            else datetime.min
+        )
+        return rows[-limit:]
     
     @staticmethod
     def _append_to_file(file_path: Path, data: dict) -> None:
@@ -113,22 +143,25 @@ class MetricsCollector:
     @staticmethod
     def get_recent_syncs(limit: int = 10) -> List[Dict]:
         """최근 동기화 메트릭 조회."""
-        return list(_sync_cache)[-limit:]
+        from_file = MetricsCollector._read_recent_from_file(SYNC_METRICS_FILE, limit)
+        return from_file if from_file else list(_sync_cache)[-limit:]
     
     @staticmethod
     def get_recent_searches(limit: int = 10) -> List[Dict]:
         """최근 검색 메트릭 조회."""
-        return list(_search_cache)[-limit:]
+        from_file = MetricsCollector._read_recent_from_file(SEARCH_METRICS_FILE, limit)
+        return from_file if from_file else list(_search_cache)[-limit:]
     
     @staticmethod
     def get_recent_chats(limit: int = 10) -> List[Dict]:
         """최근 챗봇 메트릭 조회."""
-        return list(_chat_cache)[-limit:]
+        from_file = MetricsCollector._read_recent_from_file(CHAT_METRICS_FILE, limit)
+        return from_file if from_file else list(_chat_cache)[-limit:]
     
     @staticmethod
     def get_sync_stats(hours: int = 24) -> Dict:
         """동기화 통계 (최근 N시간)."""
-        cutoff = datetime.now() - timedelta(hours=hours)
+        cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=hours)
         
         total_count = 0
         incremental_count = 0
@@ -141,7 +174,7 @@ class MetricsCollector:
                 for line in f:
                     try:
                         data = json.loads(line)
-                        ts = datetime.fromisoformat(data["timestamp"])
+                        ts = MetricsCollector._parse_timestamp(data["timestamp"])
                         
                         if ts >= cutoff:
                             total_count += 1
@@ -172,7 +205,7 @@ class MetricsCollector:
     @staticmethod
     def get_search_stats(hours: int = 24) -> Dict:
         """검색 통계 (최근 N시간)."""
-        cutoff = datetime.now() - timedelta(hours=hours)
+        cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=hours)
         
         total_count = 0
         total_duration = 0.0
@@ -184,7 +217,7 @@ class MetricsCollector:
                 for line in f:
                     try:
                         data = json.loads(line)
-                        ts = datetime.fromisoformat(data["timestamp"])
+                        ts = MetricsCollector._parse_timestamp(data["timestamp"])
                         
                         if ts >= cutoff:
                             total_count += 1
@@ -211,7 +244,7 @@ class MetricsCollector:
     @staticmethod
     def get_chat_stats(hours: int = 24) -> Dict:
         """챗봇 통계 (최근 N시간)."""
-        cutoff = datetime.now() - timedelta(hours=hours)
+        cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=hours)
         
         total_count = 0
         total_duration = 0.0
@@ -225,7 +258,7 @@ class MetricsCollector:
                 for line in f:
                     try:
                         data = json.loads(line)
-                        ts = datetime.fromisoformat(data["timestamp"])
+                        ts = MetricsCollector._parse_timestamp(data["timestamp"])
                         
                         if ts >= cutoff:
                             total_count += 1

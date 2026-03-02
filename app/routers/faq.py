@@ -13,7 +13,7 @@ from app.services.sheet_manager import faq_sheet_manager
 from app.config import settings
 from app.utils.sync_state import get_last_sync_time, update_last_sync_time
 from app.utils.metrics import metrics_collector, Timer, SyncMetric
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/faq", tags=["FAQ"])
 _SYNC_LOCK = threading.Lock()
@@ -212,7 +212,7 @@ def run_faq_vector_sync(full_sync: bool = False) -> dict:
         # 메트릭 기록
         try:
             metrics_collector.record_sync(SyncMetric(
-                timestamp=datetime.now().isoformat(),
+                timestamp=datetime.now(timezone.utc).isoformat(),
                 sync_type=sync_type,
                 duration_ms=timer.get_elapsed_ms(),
                 faq_count=faq_count,
