@@ -1,0 +1,129 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 공통 설정 앵커
+# ─────────────────────────────────────────────────────────────────────────────
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-restart: &default-restart
+  restart: unless-stopped
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 시크릿 (Google 서비스 계정 키 — 파일로 마운트)
+# ─────────────────────────────────────────────────────────────────────────────
+secrets:
+  google_credentials:
+    file: ${GOOGLE_CREDENTIALS_FILE:-./secrets/google-credentials.json}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 볼륨
+# ─────────────────────────────────────────────────────────────────────────────
+volumes:
+  chroma_data:
+    driver: local
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 네트워크 (서비스 간 내부 통신)
+# ─────────────────────────────────────────────────────────────────────────────
+networks:
+  faq_net:
+    driver: bridge
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 서비스
+# ─────────────────────────────────────────────────────────────────────────────
+services:
+
+  # ── FastAPI 백엔드 ─────────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        EMBEDDING_MODEL: ${EMBEDDING_MODEL_NAME:-BAAI/bge-m3}
+    container_name: faq-api
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - chroma_data:/app/chroma_db
+    secrets:
+      - google_credentials
+    environment:
+      # Google Sheets 인증 → 시크릿 파일 경로
+      GOOGLE_SHEETS_CREDENTIALS_PATH: /run/secrets/google_credentials
+      SPREADSHEET_ID:        ${SPREADSHEET_ID}
+      ANTHROPIC_API_KEY:     ${ANTHROPIC_API_KEY}
+      CHROMA_PERSIST_DIR:    /app/chroma_db
+      EMBEDDING_MODEL_NAME:  ${EMBEDDING_MODEL_NAME:-BAAI/bge-m3}
+      CACHE_TTL_SECONDS:     ${CACHE_TTL_SECONDS:-300}
+      APP_NAME:              ${APP_NAME:-FAQ Generator API}
+      APP_VERSION:           ${APP_VERSION:-1.0.0}
+      ALLOWED_ORIGINS:       >-
+        ["${FRONTEND_ORIGIN:-http://localhost:3000}",
+         "${STREAMLIT_ORIGIN:-http://localhost:8501}"]
+    networks:
+      - faq_net
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout:  10s
+      retries:  3
+      start_period: 60s
+    logging: *default-logging
+    <<: *default-restart
+
+  # ── Streamlit 관리자 대시보드 ──────────────────────────────────────────────
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    container_name: faq-streamlit
+    ports:
+      - "${STREAMLIT_PORT:-8501}:8501"
+    environment:
+      API_BASE_URL: http://app:8000
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - faq_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout:  10s
+      retries:  3
+      start_period: 20s
+    logging: *default-logging
+    <<: *default-restart
+
+  # ── Next.js 프론트엔드 ────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # 브라우저에서 직접 호출하므로 외부 접근 가능한 URL 사용
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8000}
+    container_name: faq-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8000}
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - faq_net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
+      interval: 30s
+      timeout:  10s
+      retries:  3
+      start_period: 30s
+    logging: *default-logging
+    <<: *default-restart

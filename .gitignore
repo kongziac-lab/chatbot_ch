@@ -1,0 +1,34 @@
+# OS
+.DS_Store
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+secrets/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node / frontend
+node_modules/
+public/node_modules/
+frontend/node_modules/
+public/dist/
+frontend/.next/
+
+# Vercel local metadata
+.vercel/
+public/.vercel/
+frontend/.vercel/
+
+# Runtime data
+uploads/
+metrics/*.jsonl
+chroma_db/
+sync_state.json
+
+# Logs
+*.log

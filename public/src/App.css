@@ -1,0 +1,148 @@
+/* App specific styles */
+.app-container {
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Hide scrollbar for quick menu */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Message animation */
+.message-enter {
+  animation: messageSlideIn 0.3s ease-out forwards;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Card hover lift effect */
+.category-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(3, 78, 162, 0.15),
+              0 10px 10px -5px rgba(3, 78, 162, 0.1);
+}
+
+/* Menu button hover */
+.menu-btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.menu-btn:hover {
+  background-color: #034ea2;
+  color: white;
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(3, 78, 162, 0.3);
+}
+
+.menu-btn:active {
+  transform: scale(0.98);
+}
+
+/* Input focus ring */
+.chat-input {
+  transition: all 0.2s ease;
+}
+
+.chat-input:focus {
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(3, 78, 162, 0.15);
+}
+
+/* Language option selection */
+.lang-option {
+  transition: all 0.2s ease;
+}
+
+.lang-option:hover {
+  background-color: #f3f4f6;
+}
+
+.lang-option.selected {
+  background-color: #034ea2;
+  color: white;
+  border-color: #034ea2;
+}
+
+/* Gradient backgrounds */
+.bg-gradient-kmu {
+  background: linear-gradient(135deg, #034ea2 0%, #2685bb 100%);
+}
+
+.bg-gradient-kmu-light {
+  background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+}
+
+/* Shield logo shadow */
+.shield-logo {
+  filter: drop-shadow(0 4px 6px rgba(3, 78, 162, 0.2));
+}
+
+/* Typing indicator animation */
+.typing-dot {
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typing-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes typingBounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .category-card {
+    font-size: 0.875rem;
+  }
+  
+  .category-card h3 {
+    font-size: 1rem;
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus visible for accessibility */
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #034ea2;
+  outline-offset: 2px;
+}
+
+/* Selection color */
+::selection {
+  background-color: rgba(3, 78, 162, 0.2);
+  color: inherit;
+}

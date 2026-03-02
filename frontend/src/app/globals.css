@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: #0057A8;
+    --color-accent:  #E84D0E;
+  }
+  body {
+    @apply text-gray-800 bg-gray-50;
+  }
+}

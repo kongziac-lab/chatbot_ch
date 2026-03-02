@@ -1,0 +1,35 @@
+# Render Blueprint — FAQ 생성기 백엔드 API
+# https://dashboard.render.com/ 에서 "New > Blueprint"로 연결 후 배포
+#
+# 필수: 환경 변수는 Render 대시보드에서 설정하세요.
+# - SPREADSHEET_ID (필수)
+# - OPENAI_API_KEY (필수)
+# - ALLOWED_ORIGINS (권장: Vercel 프론트엔드 URL)
+# - WEBHOOK_SECRET (Apps Script 자동 동기화용)
+# - OAUTH_CLIENT_SECRETS_PATH, OAUTH_TOKEN_PATH (Secret Files로 업로드)
+
+services:
+  - type: web
+    name: faq-generator-api
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # Render PORT 환경 변수 사용 (기본 10000)
+    dockerCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --log-level info
+    region: oregon
+    plan: free
+    # ChromaDB 벡터 저장용 디스크 (선택, 유료 플랜에서 사용)
+    # disk:
+    #   name: chroma-data
+    #   mountPath: /data
+    #   sizeGB: 1
+    envVars:
+      - key: SPREADSHEET_ID
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: CHROMA_PERSIST_DIR
+        value: /data/chroma_db
+      - key: WEBHOOK_SECRET
+        sync: false
