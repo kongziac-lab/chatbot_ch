@@ -9,6 +9,7 @@ from __future__ import annotations
 import threading
 import time
 import uuid
+import unicodedata
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
@@ -119,6 +120,38 @@ class FAQSheetManager:
         except Exception:
             return default
 
+    @classmethod
+    def _field_text(cls, value: Any) -> str:
+        """Lark Base 필드값(문자열/선택형/리스트/딕셔너리)을 사람이 읽는 텍스트로 변환."""
+        if value is None:
+            return ""
+        if isinstance(value, str):
+            return value.strip()
+        if isinstance(value, (int, float, bool)):
+            return str(value).strip()
+        if isinstance(value, dict):
+            for key in ("text", "name", "value", "label"):
+                if key in value and value[key] is not None:
+                    return cls._field_text(value[key])
+            return str(value).strip()
+        if isinstance(value, list):
+            parts = [cls._field_text(v) for v in value]
+            parts = [p for p in parts if p]
+            return ", ".join(parts)
+        return str(value).strip()
+
+    @staticmethod
+    def _normalize_match_text(value: Any) -> str:
+        text = unicodedata.normalize("NFKC", str(value or ""))
+        text = text.strip().lower()
+        text = text.replace("／", "/")
+        return "".join(text.split())
+
+    @classmethod
+    def _is_published_status(cls, value: Any) -> bool:
+        normalized = cls._normalize_match_text(value)
+        return normalized in {"게시중", "게시", "published", "공개", "active", "on"}
+
     @staticmethod
     def _now_iso() -> str:
         return datetime.now().isoformat(timespec="seconds")
@@ -187,19 +220,19 @@ class FAQSheetManager:
     def _record_to_row(self, item: dict) -> dict[str, Any]:
         fields = item.get("fields", {})
         row = {
-            "고유번호": str(fields.get("고유번호") or ""),
-            "카테고리(대분류)": str(fields.get("카테고리(대분류)") or ""),
-            "카테고리(중분류)": str(fields.get("카테고리(중분류)") or ""),
-            "질문(한국어)": str(fields.get("질문(한국어)") or ""),
-            "답변(한국어)": str(fields.get("답변(한국어)") or ""),
-            "질문(중국어)": str(fields.get("질문(중국어)") or ""),
-            "답변(중국어)": str(fields.get("답변(중국어)") or ""),
-            "출처": str(fields.get("출처") or ""),
-            "상태": str(fields.get("상태") or ""),
-            "생성부서": str(fields.get("생성부서") or ""),
-            "적용범위": str(fields.get("적용범위") or ""),
-            "생성일": str(fields.get("생성일") or ""),
-            "수정일": str(fields.get("수정일") or ""),
+            "고유번호": self._field_text(fields.get("고유번호")),
+            "카테고리(대분류)": self._field_text(fields.get("카테고리(대분류)")),
+            "카테고리(중분류)": self._field_text(fields.get("카테고리(중분류)")),
+            "질문(한국어)": self._field_text(fields.get("질문(한국어)")),
+            "답변(한국어)": self._field_text(fields.get("답변(한국어)")),
+            "질문(중국어)": self._field_text(fields.get("질문(중국어)")),
+            "답변(중국어)": self._field_text(fields.get("답변(중국어)")),
+            "출처": self._field_text(fields.get("출처")),
+            "상태": self._field_text(fields.get("상태")),
+            "생성부서": self._field_text(fields.get("생성부서")),
+            "적용범위": self._field_text(fields.get("적용범위")),
+            "생성일": self._field_text(fields.get("생성일")),
+            "수정일": self._field_text(fields.get("수정일")),
             "우선순위": self._to_int(fields.get("우선순위"), 5),
             "조회수": self._to_int(fields.get("조회수"), 0),
             "도움됨비율": float(fields.get("도움됨비율") or 0),
@@ -243,15 +276,24 @@ class FAQSheetManager:
         if cached and cached.is_valid():
             rows = list(cached.data)
         else:
-            rows = [r for r in self._all_rows() if r.get("상태") == PUBLISHED_STATUS]
+            rows = [r for r in self._all_rows() if self._is_published_status(r.get("상태"))]
             self._cache[cache_key] = _CacheEntry(rows)
 
         if category_major:
-            rows = [r for r in rows if r.get("카테고리(대분류)") == category_major]
+            category_major_norm = self._normalize_match_text(category_major)
+            rows = [
+                r for r in rows
+                if self._normalize_match_text(r.get("카테고리(대분류)")) == category_major_norm
+            ]
         if category_minor:
-            rows = [r for r in rows if r.get("카테고리(중분류)") == category_minor]
+            category_minor_norm = self._normalize_match_text(category_minor)
+            rows = [
+                r for r in rows
+                if self._normalize_match_text(r.get("카테고리(중분류)")) == category_minor_norm
+            ]
         if scope:
-            rows = [r for r in rows if r.get("적용범위") == scope]
+            scope_norm = self._normalize_match_text(scope)
+            rows = [r for r in rows if self._normalize_match_text(r.get("적용범위")) == scope_norm]
         if search:
             q = search.lower()
             rows = [
