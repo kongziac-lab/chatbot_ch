@@ -144,7 +144,7 @@ export function markdownToHtml(markdown: string, language: Language = 'ko'): str
 
   // 링크: 텍스트(URL) → 텍스트(바로가기 🔗)
   html = html.replace(
-    /(^|[\s>])([^\s<()]+(?:\s+[^\s<()]+)*)\(((?:https?:\/\/|www\.)[^\s)]+)\)/g,
+    /(^|[\s>])([^\s<()（）]+(?:\s+[^\s<()（）]+)*)[（(]((?:https?:\/\/|www\.)[^\s)）]+)[）)]/g,
     (_m, prefix, label, rawUrl) => {
       const href = rawUrl.startsWith('www.') ? `https://${rawUrl}` : rawUrl;
       const linkLabel = language === 'zh' ? '直达链接 🔗' : '바로가기 🔗';
@@ -154,13 +154,13 @@ export function markdownToHtml(markdown: string, language: Language = 'ko'): str
 
   // 일반 URL: https://... → <a href="...">...</a>
   html = html.replace(
-    /(^|[\s(])(https?:\/\/[^\s<)]+)/g,
+    /(^|[\s(（])(https?:\/\/[^\s<)）]+)/g,
     '$1<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">$2</a>'
   );
 
   // www URL: www.example.com → <a href="https://www.example.com">www.example.com</a>
   html = html.replace(
-    /(^|[\s(])(www\.[^\s<)]+)/g,
+    /(^|[\s(（])(www\.[^\s<)）]+)/g,
     '$1<a href="https://$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">$2</a>'
   );
 
