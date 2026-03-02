@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
-import { Settings, BarChart3, FileText, LogOut, Upload } from 'lucide-react';
-import { FAQGeneratorPage } from './FAQGeneratorPage';
+import { Settings, BarChart3, LogOut } from 'lucide-react';
 import { MetricsDashboard } from './MetricsDashboard';
-import { DocumentUploadPage } from './DocumentUploadPage';
 
 interface AdminDashboardProps {
   onBack: () => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
-  const [activeTab, setActiveTab] = useState<'generator' | 'upload' | 'metrics'>('generator');
+  const [activeTab, setActiveTab] = useState<'metrics'>('metrics');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -40,32 +38,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex gap-1">
             <button
-              onClick={() => setActiveTab('generator')}
-              className={`px-6 py-4 font-medium border-b-2 transition-all ${
-                activeTab === 'generator'
-                  ? 'border-kmu-blue text-kmu-blue bg-kmu-blue/5'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                <span>FAQ 자동생성</span>
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('upload')}
-              className={`px-6 py-4 font-medium border-b-2 transition-all ${
-                activeTab === 'upload'
-                  ? 'border-kmu-blue text-kmu-blue bg-kmu-blue/5'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Upload className="w-5 h-5" />
-                <span>문서 업로드</span>
-              </div>
-            </button>
-            <button
               onClick={() => setActiveTab('metrics')}
               className={`px-6 py-4 font-medium border-b-2 transition-all ${
                 activeTab === 'metrics'
@@ -84,8 +56,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
 
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {activeTab === 'generator' && <FAQGeneratorPage />}
-        {activeTab === 'upload' && <DocumentUploadPage />}
         {activeTab === 'metrics' && <MetricsDashboard />}
       </main>
 
