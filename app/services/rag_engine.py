@@ -1,6 +1,6 @@
 """ChromaDB 기반 벡터 저장소.
 
-임베딩 모델: BAAI/bge-m3 (sentence-transformers)
+임베딩 모델: OpenAI Embeddings (text-embedding-3-small 기본)
   - 한·중·영 다국어 지원
   - 코사인 유사도 기반 검색
 
@@ -20,9 +20,9 @@ import chromadb
 import numpy as np
 from chromadb import EmbeddingFunction, Documents, Embeddings
 from loguru import logger
+from openai import OpenAI
 
 from app.config import settings
-from app.services.document_parser import DocType, document_parser
 from app.utils.metrics import metrics_collector, Timer, SearchMetric
 from datetime import datetime
 
@@ -74,25 +74,17 @@ _embed_cache = _EmbedLRUCache()
 
 
 # ---------------------------------------------------------------------------
-# BGE-M3 임베딩 함수 (ChromaDB EmbeddingFunction 인터페이스 구현)
+# OpenAI 임베딩 함수 (ChromaDB EmbeddingFunction 인터페이스 구현)
 # ---------------------------------------------------------------------------
 
-class BGEM3EmbeddingFunction(EmbeddingFunction):
-    """sentence-transformers BAAI/bge-m3 래퍼 (캐싱 포함)."""
+class OpenAIEmbeddingFunction(EmbeddingFunction):
+    """OpenAI Embeddings 래퍼 (캐싱 포함)."""
 
     def __init__(self, model_name: str) -> None:
         self._model_name = model_name
-        self._model = None
-
-    def _load(self):
-        if self._model is None:
-            from sentence_transformers import SentenceTransformer
-            logger.info("BGE-M3 모델 로드 중: {}", self._model_name)
-            self._model = SentenceTransformer(self._model_name)
-            logger.info("BGE-M3 모델 로드 완료")
+        self._client = OpenAI(api_key=settings.openai_api_key)
 
     def __call__(self, input: Documents) -> Embeddings:  # noqa: A002
-        self._load()
         texts = list(input)
         results: list[list[float]] = [None] * len(texts)  # type: ignore[list-item]
         uncached_indices: list[int] = []
@@ -108,13 +100,14 @@ class BGEM3EmbeddingFunction(EmbeddingFunction):
                 uncached_texts.append(text)
 
         if uncached_texts:
-            vectors = self._model.encode(
-                uncached_texts,
-                normalize_embeddings=True,
-                show_progress_bar=False,
-                batch_size=32,
+            # OpenAI Embeddings 배치 호출
+            resp = self._client.embeddings.create(
+                model=self._model_name,
+                input=uncached_texts,
             )
-            for idx, vec in zip(uncached_indices, vectors.tolist()):
+            vectors = [row.embedding for row in resp.data]
+
+            for idx, vec in zip(uncached_indices, vectors):
                 results[idx] = vec
                 _embed_cache.put(texts[idx], vec)
             logger.debug(
@@ -190,7 +183,7 @@ class VectorStore:
     def __init__(self) -> None:
         self._client: chromadb.PersistentClient | None = None
         self._collections: dict[str, chromadb.Collection] = {}  # 컬렉션 캐시
-        self._embedding_fn = BGEM3EmbeddingFunction(
+        self._embedding_fn = OpenAIEmbeddingFunction(
             model_name=settings.embedding_model_name
         )
 
@@ -399,7 +392,7 @@ class VectorStore:
         return [{"text": doc, "metadata": meta} for doc, meta in pairs]
 
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
-        """BGE-M3로 텍스트를 임베딩해 벡터 목록 반환 (중복 제거용)."""
+        """OpenAI Embeddings로 텍스트를 임베딩해 벡터 목록 반환."""
         return self._embedding_fn(texts)
 
     def collection_count(self, collection_name: str = COLLECTION_DOCUMENTS) -> int:
@@ -449,33 +442,4 @@ class VectorStore:
 
 
 # ---------------------------------------------------------------------------
-# 파일 업로드 → 파싱 → 청킹 → 벡터 저장 파이프라인
-# ---------------------------------------------------------------------------
-
-class IngestionPipeline:
-    """문서 수집(ingest) 파이프라인: 파일 → 벡터 저장."""
-
-    def __init__(self, store: VectorStore) -> None:
-        self._store = store
-
-    def ingest(
-        self,
-        file_path: str,
-        document_id: str,
-        doc_type: DocType = DocType.GUIDE,
-    ) -> tuple[int, "ParsedDocument"]:
-        """파일을 파싱·청킹하여 벡터 DB에 저장.
-
-        Returns:
-            (저장된 청크 수, ParsedDocument)
-        """
-        logger.info("문서 수집 시작: {} | doc_id={}", file_path, document_id)
-        parsed = document_parser.parse(file_path)
-        chunks = document_parser.chunk(parsed, doc_type=doc_type)
-        num_chunks = self._store.add_documents(chunks, document_id=document_id)
-        logger.info("문서 수집 완료: {} chunks | doc_id={}", num_chunks, document_id)
-        return num_chunks, parsed
-
-
 vector_store = VectorStore()
-ingestion_pipeline = IngestionPipeline(vector_store)

@@ -27,7 +27,7 @@ python3 scripts/chroma_preflight.py
 - `WEBHOOK_SECRET`
 - `CHROMA_PERSIST_DIR` (기본 `./chroma_db`)
 - `CACHE_TTL_SECONDS` (기본 `300`)
-- `EMBEDDING_MODEL_NAME` (기본 `BAAI/bge-m3`)
+- `EMBEDDING_MODEL_NAME` (기본 `text-embedding-3-small`)
 
 ## 4) 스토리지 권장
 - ChromaDB 영속화를 위해 Volume 마운트 권장

@@ -3,13 +3,10 @@ from loguru import logger
 
 from app.models.schemas import (
     AnswerRequest,
-    AnswerResponse,
     FAQSearchRequest,
     FAQSearchResponse,
     FAQItem,
-    SourceRef,
 )
-from app.services.faq_generator import answer_generator
 from app.services.rag_engine import vector_store, COLLECTION_FAQ, COLLECTION_DOCUMENTS
 from app.services.sheet_manager import faq_sheet_manager
 from app.config import settings
@@ -20,32 +17,14 @@ from datetime import datetime
 router = APIRouter(prefix="/faq", tags=["FAQ"])
 
 
-@router.post("/answer", response_model=AnswerResponse)
+@router.post("/answer")
 async def answer_question(request: AnswerRequest):
-    """RAG 기반 질의응답 — 벡터 DB 검색 후 Claude가 근거 기반 답변 생성."""
-    try:
-        result = answer_generator.generate(
-            question=request.question,
-            language=request.language,
-            doc_type=request.doc_type,
-        )
-        return AnswerResponse(
-            question=result.question,
-            answer=result.answer,
-            language=result.language,
-            sources=[
-                SourceRef(
-                    source_doc=s.source_doc,
-                    page_num=s.page_num,
-                    doc_type=s.doc_type,
-                )
-                for s in result.sources
-            ],
-            retrieved_count=result.retrieved_count,
-            confidence=result.confidence,
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    """레거시 /answer 엔드포인트는 비활성화되었습니다."""
+    _ = request
+    raise HTTPException(
+        status_code=410,
+        detail="FAQ /answer 엔드포인트는 제거되었습니다. /api/v1/chat 엔드포인트를 사용하세요.",
+    )
 
 
 @router.post("/generate")

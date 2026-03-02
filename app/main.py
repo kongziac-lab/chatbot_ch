@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
 from app.config import settings
-from app.routers import faq, faqs, chat, documents, feedback, translate, metrics
+from app.routers import faq, faqs, chat, feedback, translate, metrics
 
 # ---------------------------------------------------------------------------
 # 조회수 자동 flush 백그라운드 태스크
@@ -81,7 +81,6 @@ app.add_middleware(
 app.include_router(faq.router,       prefix="/api/v1")   # 내부 관리 API
 app.include_router(faqs.router,      prefix="/api/v1")   # 공개 조회 API
 app.include_router(chat.router,      prefix="/api/v1")   # 챗봇 API
-app.include_router(documents.router, prefix="/api/v1")
 app.include_router(feedback.router,  prefix="/api/v1")
 app.include_router(translate.router, prefix="/api/v1")
 app.include_router(metrics.router,   prefix="/api/v1")   # 성능 메트릭 API

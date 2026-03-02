@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Stage 1: 의존성 설치 + BGE-M3 모델 사전 다운로드
+# Stage 1: 의존성 설치
 # ─────────────────────────────────────────────────────────────────────────────
 FROM python:3.11-slim AS builder
 
@@ -19,11 +19,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
  && pip install --no-cache-dir -r requirements.txt
 
-# BGE-M3 모델은 빌드 시 포함하지 않음
-# → 볼륨(/app/models)에 첫 시작 시 1회 다운로드 후 캐시
-ARG EMBEDDING_MODEL=BAAI/bge-m3
-
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 2: 런타임 이미지 (최소화)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -42,12 +37,8 @@ COPY --from=builder /usr/local/lib/python3.11/site-packages \
                     /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# 모델은 영속 볼륨(/app/models)에서 로드
-# 첫 시작 시 없으면 자동 다운로드, 이후 재사용
-ENV SENTENCE_TRANSFORMERS_HOME=/app/models \
-    HF_HOME=/app/models \
-    # Python 버퍼링 해제 (로그 즉시 출력)
-    PYTHONUNBUFFERED=1 \
+# Python 버퍼링 해제 (로그 즉시 출력)
+ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
 # 앱 소스 복사 (credentials 제외)

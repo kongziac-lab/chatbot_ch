@@ -84,9 +84,9 @@ class Settings(BaseSettings):
     # Embedding                                                            #
     # ------------------------------------------------------------------ #
     embedding_model_name: str = Field(
-        default="BAAI/bge-m3",
+        default="text-embedding-3-small",
         alias="EMBEDDING_MODEL_NAME",
-        description="HuggingFace 임베딩 모델명",
+        description="OpenAI 임베딩 모델명",
     )
 
     # ------------------------------------------------------------------ #
