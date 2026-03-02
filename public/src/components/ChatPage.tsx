@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   Menu,
   MessageSquare,
-  User,
 } from 'lucide-react';
 import { ChatBotIcon } from './ChatBotIcon';
 import kmuLogo from '@/assets/kmu-logo.png';
@@ -497,8 +496,8 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
               </div>
 
               {message.type === 'user' && (
-                <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center ml-2 flex-shrink-0">
-                  <User className="w-4 h-4 text-white" />
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-300 flex items-center justify-center ml-2 flex-shrink-0">
+                  <ChatBotIcon size={24} />
                 </div>
               )}
             </div>
