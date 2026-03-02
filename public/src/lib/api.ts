@@ -176,8 +176,39 @@ export function markdownToHtml(markdown: string, language: Language = 'ko'): str
   // 취소선: ~~텍스트~~ → <del>텍스트</del>
   html = html.replace(/~~([^~]+)~~/g, '<del>$1</del>');
 
-  // 줄바꿈 처리
-  html = html.replace(/\n/g, '<br>');
+  // 줄바꿈/목록 서식 처리 (번호 목록 + 보조문장 들여쓰기)
+  const lines = html.split('\n');
+  let prevWasNumbered = false;
+  html = lines
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        prevWasNumbered = false;
+        return '<div class="h-3"></div>';
+      }
+
+      const numbered = trimmed.match(/^(\d+)\.\s*(.*)$/);
+      if (numbered) {
+        prevWasNumbered = true;
+        return `<div class="flex items-start gap-2 my-1">
+          <span class="text-blue-600 font-semibold min-w-[1.5rem]">${numbered[1]}.</span>
+          <span class="flex-1">${numbered[2]}</span>
+        </div>`;
+      }
+
+      if (trimmed.startsWith('※')) {
+        prevWasNumbered = false;
+        return `<div class="my-2">${trimmed}</div>`;
+      }
+
+      if (prevWasNumbered) {
+        return `<div class="pl-8 my-1">${trimmed}</div>`;
+      }
+
+      prevWasNumbered = false;
+      return `<div>${trimmed}</div>`;
+    })
+    .join('');
 
   return html;
 }
