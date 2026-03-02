@@ -496,8 +496,8 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
               </div>
 
               {message.type === 'user' && (
-                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-300 flex items-center justify-center ml-2 flex-shrink-0">
-                  <ChatBotIcon size={24} />
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-transparent flex items-center justify-center ml-2 flex-shrink-0">
+                  <ChatBotIcon size={30} />
                 </div>
               )}
             </div>
