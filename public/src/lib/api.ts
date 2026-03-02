@@ -142,6 +142,15 @@ export function markdownToHtml(markdown: string): string {
     '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">$1</a>'
   );
 
+  // 링크: 텍스트(URL) → <a href="URL">텍스트</a>
+  html = html.replace(
+    /(^|[\s>])([^\s<()]+(?:\s+[^\s<()]+)*)\(((?:https?:\/\/|www\.)[^\s)]+)\)/g,
+    (_m, prefix, label, rawUrl) => {
+      const href = rawUrl.startsWith('www.') ? `https://${rawUrl}` : rawUrl;
+      return `${prefix}<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">${label}</a>`;
+    }
+  );
+
   // 일반 URL: https://... → <a href="...">...</a>
   html = html.replace(
     /(^|[\s(])(https?:\/\/[^\s<)]+)/g,
