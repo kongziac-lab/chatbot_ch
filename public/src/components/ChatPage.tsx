@@ -11,6 +11,7 @@ import {
   User,
 } from 'lucide-react';
 import { ChatBotIcon } from './ChatBotIcon';
+import kmuShieldLogo from '@/assets/kmu-shield-logo.png';
 import { categories, translations } from '@/data/menuData';
 import type { Language, Message, SubCategory, FAQItem } from '@/types';
 import { chatApi, faqApi, markdownToHtml } from '@/lib/api';
@@ -34,6 +35,16 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const renderBotAvatar = (size: number) => (
+    <img
+      src={kmuShieldLogo}
+      alt="계명대학교 로고"
+      width={size}
+      height={size}
+      style={{ objectFit: 'contain' }}
+    />
+  );
 
   // Initialize with welcome message
   useEffect(() => {
@@ -356,7 +367,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
               <ChevronLeft className="w-5 h-5 text-gray-600" />
             </button>
             <div className="flex items-center gap-2">
-              <ChatBotIcon size={35} />
+              {renderBotAvatar(35)}
               <div>
                 <h1 className="font-bold text-gray-800">
                   {translations.botTitle[language]}
@@ -386,7 +397,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
             >
               {message.type === 'bot' && (
                 <div className="mr-2 flex-shrink-0">
-                  <ChatBotIcon size={25} />
+                  {renderBotAvatar(25)}
                 </div>
               )}
 
