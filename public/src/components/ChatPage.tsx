@@ -45,6 +45,29 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
     />
   );
 
+  const normalizeKeyword = (text: string) =>
+    text.toLowerCase().replace(/\s+/g, '').trim();
+
+  const findMatchedCategories = (rawInput: string) => {
+    const q = normalizeKeyword(rawInput);
+    if (!q) return [];
+
+    return categories.filter((cat) => {
+      const majorKo = normalizeKeyword(cat.label.ko);
+      const majorZh = normalizeKeyword(cat.label.zh);
+      const majorMatched =
+        majorKo.includes(q) || q.includes(majorKo) || majorZh.includes(q) || q.includes(majorZh);
+
+      if (majorMatched) return true;
+
+      return cat.subCategories.some((sub) => {
+        const subKo = normalizeKeyword(sub.label.ko);
+        const subZh = normalizeKeyword(sub.label.zh);
+        return subKo.includes(q) || q.includes(subKo) || subZh.includes(q) || q.includes(subZh);
+      });
+    });
+  };
+
   // Initialize with welcome message
   useEffect(() => {
     const welcomeMessage: Message = {
@@ -75,6 +98,41 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
     setMessages((prev) => [...prev, userMessage]);
     const messageText = inputText;
     setInputText('');
+
+    // 0) 입력 키워드로 대/중분류를 먼저 매칭 (메뉴 즉시 노출)
+    const matchedCategories = findMatchedCategories(messageText);
+    if (matchedCategories.length > 0) {
+      setIsTyping(true);
+      setTimeout(() => {
+        const botResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'bot',
+          content:
+            matchedCategories.length === 1
+              ? language === 'ko'
+                ? `'${matchedCategories[0].label.ko}' 메뉴를 찾았습니다. 항목을 선택해주세요.`
+                : `已找到'${matchedCategories[0].label.zh}'菜单。请选择项目。`
+              : language === 'ko'
+              ? `관련 메뉴 ${matchedCategories.length}개를 찾았습니다. 선택해주세요.`
+              : `找到${matchedCategories.length}个相关菜单。请选择。`,
+          timestamp: new Date(),
+          menuCards: matchedCategories.length > 1 ? matchedCategories : undefined,
+          subMenuCards:
+            matchedCategories.length === 1
+              ? [
+                  {
+                    categoryId: matchedCategories[0].id,
+                    items: matchedCategories[0].subCategories,
+                  },
+                ]
+              : undefined,
+        };
+        setMessages((prev) => [...prev, botResponse]);
+        setIsTyping(false);
+      }, 250);
+      return;
+    }
+
     setIsTyping(true);
 
     try {
