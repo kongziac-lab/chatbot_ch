@@ -11,7 +11,7 @@ import {
   User,
 } from 'lucide-react';
 import { ChatBotIcon } from './ChatBotIcon';
-import kmuShieldLogo from '@/assets/kmu-shield-logo.png';
+import kmuLogo from '@/assets/kmu-logo.png';
 import { categories, translations } from '@/data/menuData';
 import type { Language, Message, SubCategory, FAQItem } from '@/types';
 import { chatApi, faqApi, markdownToHtml } from '@/lib/api';
@@ -37,8 +37,8 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const renderBotAvatar = (size: number) => (
-    <img
-      src={kmuShieldLogo}
+      <img
+      src={kmuLogo}
       alt="계명대학교 로고"
       width={size}
       height={size}
