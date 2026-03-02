@@ -48,6 +48,20 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
   const normalizeKeyword = (text: string) =>
     text.toLowerCase().replace(/\s+/g, '').trim();
 
+  const isSingleKeywordInput = (rawInput: string) => {
+    const text = rawInput.trim();
+    if (!text) return false;
+
+    // 공백이 있으면 문장으로 간주
+    if (/\s/.test(text)) return false;
+    // 문장부호가 있으면 문장으로 간주
+    if (/[.,!?;:()'"“”‘’\-_/\\。！？]/.test(text)) return false;
+    // 너무 길면 문장으로 간주
+    if (text.length > 12) return false;
+
+    return true;
+  };
+
   const findMatchedCategories = (rawInput: string) => {
     const q = normalizeKeyword(rawInput);
     if (!q) return [];
@@ -99,9 +113,9 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
     const messageText = inputText;
     setInputText('');
 
-    // 0) 입력 키워드로 대/중분류를 먼저 매칭 (메뉴 즉시 노출)
+    // 0) 단어 입력일 때만 대/중분류 키워드 매칭으로 메뉴 즉시 노출
     const matchedCategories = findMatchedCategories(messageText);
-    if (matchedCategories.length > 0) {
+    if (isSingleKeywordInput(messageText) && matchedCategories.length > 0) {
       setIsTyping(true);
       setTimeout(() => {
         const botResponse: Message = {
