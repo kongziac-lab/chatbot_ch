@@ -122,7 +122,7 @@ class FAQSheetManager:
 
     @classmethod
     def _field_text(cls, value: Any) -> str:
-        """Lark Base 필드값(문자열/선택형/리스트/딕셔너리)을 사람이 읽는 텍스트로 변환."""
+        """Lark Base 필드값을 텍스트로 변환 (하이퍼링크는 Markdown 링크로 보존)."""
         if value is None:
             return ""
         if isinstance(value, str):
@@ -130,6 +130,30 @@ class FAQSheetManager:
         if isinstance(value, (int, float, bool)):
             return str(value).strip()
         if isinstance(value, dict):
+            # 링크 메타데이터 보존
+            text_part = cls._field_text(
+                value.get("text")
+                or value.get("name")
+                or value.get("value")
+                or value.get("label")
+                or ""
+            )
+            link_data = value.get("link") or value.get("url") or value.get("href")
+            link_url = ""
+            if isinstance(link_data, dict):
+                link_url = str(
+                    link_data.get("url")
+                    or link_data.get("href")
+                    or link_data.get("link")
+                    or ""
+                ).strip()
+            elif isinstance(link_data, str):
+                link_url = link_data.strip()
+
+            if link_url:
+                link_label = text_part or link_url
+                return f"[{link_label}]({link_url})"
+
             for key in ("text", "name", "value", "label"):
                 if key in value and value[key] is not None:
                     return cls._field_text(value[key])
@@ -137,7 +161,7 @@ class FAQSheetManager:
         if isinstance(value, list):
             parts = [cls._field_text(v) for v in value]
             parts = [p for p in parts if p]
-            return ", ".join(parts)
+            return " ".join(parts)
         return str(value).strip()
 
     @staticmethod

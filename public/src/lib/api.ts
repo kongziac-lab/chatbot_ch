@@ -142,6 +142,12 @@ export function markdownToHtml(markdown: string): string {
     '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">$1</a>'
   );
 
+  // 일반 URL: https://... → <a href="...">...</a>
+  html = html.replace(
+    /(^|[\s(])(https?:\/\/[^\s<)]+)/g,
+    '$1<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">$2</a>'
+  );
+
   // 볼드: **텍스트** → <strong>텍스트</strong>
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
