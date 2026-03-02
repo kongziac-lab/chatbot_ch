@@ -190,8 +190,8 @@ export function markdownToHtml(markdown: string, language: Language = 'ko'): str
       const numbered = trimmed.match(/^(\d+)\.\s*(.*)$/);
       if (numbered) {
         prevWasNumbered = true;
-        return `<div class="flex items-start gap-2 my-1">
-          <span class="text-blue-600 font-semibold min-w-[1.5rem]">${numbered[1]}.</span>
+        return `<div class="flex items-start gap-1 my-1">
+          <span class="text-blue-600 font-semibold min-w-[1rem]">${numbered[1]}.</span>
           <span class="flex-1">${numbered[2]}</span>
         </div>`;
       }
