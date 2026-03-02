@@ -4,7 +4,10 @@
 
 import type { FAQItem, Language } from '@/types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const PROD_API_FALLBACK = 'https://chatbot-ch-backend.zeabur.app';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.PROD ? PROD_API_FALLBACK : 'http://localhost:8000');
 
 export interface ChatResponse {
   answer: string;

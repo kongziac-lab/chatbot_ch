@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { Wand2, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { categories } from '@/data/menuData';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002';
+const PROD_API_FALLBACK = 'https://chatbot-ch-backend.zeabur.app';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.PROD ? PROD_API_FALLBACK : 'http://localhost:8000');
 
 interface GeneratedFAQ {
   question: string;

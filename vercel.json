@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "installCommand": "cd public && npm ci",
+  "buildCommand": "cd public && npm run build",
+  "outputDirectory": "public/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
