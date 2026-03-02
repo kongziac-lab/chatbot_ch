@@ -490,7 +490,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
                     message.type === 'user' ? 'text-white' : 'text-gray-700'
                   }`}
                   dangerouslySetInnerHTML={{
-                    __html: markdownToHtml(message.content),
+                    __html: markdownToHtml(message.content, language),
                   }}
                 />
 

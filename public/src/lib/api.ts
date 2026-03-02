@@ -131,7 +131,7 @@ export const faqApi = {
 /**
  * 마크다운을 HTML로 변환
  */
-export function markdownToHtml(markdown: string): string {
+export function markdownToHtml(markdown: string, language: Language = 'ko'): string {
   if (!markdown) return '';
 
   let html = markdown;
@@ -147,7 +147,8 @@ export function markdownToHtml(markdown: string): string {
     /(^|[\s>])([^\s<()]+(?:\s+[^\s<()]+)*)\(((?:https?:\/\/|www\.)[^\s)]+)\)/g,
     (_m, prefix, label, rawUrl) => {
       const href = rawUrl.startsWith('www.') ? `https://${rawUrl}` : rawUrl;
-      return `${prefix}${label}(<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">바로가기 🔗</a>)`;
+      const linkLabel = language === 'zh' ? '直达链接 🔗' : '바로가기 🔗';
+      return `${prefix}${label}(<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">${linkLabel}</a>)`;
     }
   );
 
