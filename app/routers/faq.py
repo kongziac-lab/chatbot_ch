@@ -1,5 +1,6 @@
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Header
 from loguru import logger
+import threading
 
 from app.models.schemas import (
     AnswerRequest,
@@ -15,6 +16,7 @@ from app.utils.metrics import metrics_collector, Timer, SyncMetric
 from datetime import datetime
 
 router = APIRouter(prefix="/faq", tags=["FAQ"])
+_SYNC_LOCK = threading.Lock()
 
 
 @router.post("/answer")
@@ -85,8 +87,7 @@ async def list_faqs(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/sync-vector-db")
-async def sync_faq_to_vector_db(full_sync: bool = False):
+def run_faq_vector_sync(full_sync: bool = False) -> dict:
     """Lark Base의 게시중 FAQ를 ChromaDB에 벡터화하여 저장합니다.
     
     Args:
@@ -101,6 +102,9 @@ async def sync_faq_to_vector_db(full_sync: bool = False):
     chunk_count = 0
     deleted_count = 0
     
+    if not _SYNC_LOCK.acquire(blocking=False):
+        raise RuntimeError("이미 FAQ 동기화가 실행 중입니다. 잠시 후 다시 시도하세요.")
+
     try:
         with timer:
             # 1) 증분 업데이트: 마지막 동기화 이후 변경된 FAQ만 조회
@@ -201,9 +205,10 @@ async def sync_faq_to_vector_db(full_sync: bool = False):
         success = False
         error_msg = str(e)
         logger.error(f"FAQ 벡터화 오류: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise
     
     finally:
+        _SYNC_LOCK.release()
         # 메트릭 기록
         try:
             metrics_collector.record_sync(SyncMetric(
@@ -218,6 +223,14 @@ async def sync_faq_to_vector_db(full_sync: bool = False):
             ))
         except Exception as metric_error:
             logger.warning("동기화 메트릭 기록 실패: {}", metric_error)
+
+
+@router.post("/sync-vector-db")
+async def sync_faq_to_vector_db(full_sync: bool = False):
+    try:
+        return run_faq_vector_sync(full_sync=full_sync)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/webhook/auto-sync")

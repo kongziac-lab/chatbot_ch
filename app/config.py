@@ -100,6 +100,28 @@ class Settings(BaseSettings):
     )
 
     # ------------------------------------------------------------------ #
+    # Auto Sync                                                            #
+    # ------------------------------------------------------------------ #
+    auto_sync_enabled: bool = Field(
+        default=True,
+        alias="AUTO_SYNC_ENABLED",
+        description="FAQ 벡터 자동 동기화 활성화 여부",
+    )
+    auto_sync_incremental_minutes: int = Field(
+        default=10,
+        alias="AUTO_SYNC_INCREMENTAL_MINUTES",
+        description="증분 자동 동기화 주기(분)",
+        ge=1,
+    )
+    auto_sync_full_hour: int = Field(
+        default=3,
+        alias="AUTO_SYNC_FULL_HOUR",
+        description="하루 1회 전체 동기화 실행 시각(0-23)",
+        ge=0,
+        le=23,
+    )
+
+    # ------------------------------------------------------------------ #
     # Validators                                                           #
     # ------------------------------------------------------------------ #
     @property
