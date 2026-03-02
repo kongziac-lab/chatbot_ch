@@ -148,6 +148,12 @@ export function markdownToHtml(markdown: string): string {
     '$1<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">$2</a>'
   );
 
+  // www URL: www.example.com → <a href="https://www.example.com">www.example.com</a>
+  html = html.replace(
+    /(^|[\s(])(www\.[^\s<)]+)/g,
+    '$1<a href="https://$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">$2</a>'
+  );
+
   // 볼드: **텍스트** → <strong>텍스트</strong>
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
