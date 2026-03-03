@@ -212,12 +212,16 @@ class ChatService:
 
                 # 3) 관련 FAQ 출처 구성
                 #    - 1순위: 실제 검색에 사용된 FAQ 청크 metadata(faq_id)
-                #    - 2순위: 질문 키워드 기반 보조 검색
+                #    - 2순위: FAQ 컬렉션 벡터 재검색(엄격 필터)
                 related_faqs = self._find_related_faqs_from_chunks(chunks, language, message)
                 if len(related_faqs) < _TOP_K_RELATED:
-                    keyword_related = self._find_related_faqs(message, language)
+                    semantic_related = self._find_related_faqs_by_semantic_search(
+                        message=message,
+                        language=language,
+                        exclude_ids={f.faq_id for f in related_faqs},
+                    )
                     existing_ids = {f.faq_id for f in related_faqs}
-                    for item in keyword_related:
+                    for item in semantic_related:
                         if item.faq_id in existing_ids:
                             continue
                         related_faqs.append(item)
@@ -345,28 +349,80 @@ class ChatService:
             lines.append(f"{role}: {m.content}")
         return "\n".join(lines)
 
-    def _find_related_faqs(
-        self, query: str, language: Language
+    def _find_related_faqs_by_semantic_search(
+        self,
+        message: str,
+        language: Language,
+        exclude_ids: set[str] | None = None,
     ) -> list[RelatedFAQ]:
-        """Sheets 캐시에서 질문 키워드로 관련 FAQ 검색."""
+        """FAQ 벡터 검색 기반 출처 후보를 엄격 필터링해 반환."""
+        exclude_ids = exclude_ids or set()
+        q_col = "질문(중국어)" if language == Language.ZH else "질문(한국어)"
+        a_col = "답변(중국어)" if language == Language.ZH else "답변(한국어)"
+        keywords = self._extract_query_keywords(message)
+
         try:
-            rows = faq_sheet_manager.get_published_faqs(search=query)
+            candidates = vector_store.search(
+                message,
+                top_k=max(_TOP_K_RELATED * 3, 8),
+                collection_name=COLLECTION_FAQ,
+            )
         except Exception:
             return []
 
-        results: list[RelatedFAQ] = []
-        q_col = "질문(중국어)" if language == Language.ZH else "질문(한국어)"
+        # 1차: 점수+키워드 겹침 모두 만족하는 후보
+        strict: list[RelatedFAQ] = []
+        # 2차: 키워드 필터가 너무 빡세서 비는 경우를 위한 점수 우선 후보
+        relaxed: list[RelatedFAQ] = []
+        seen_ids = set(exclude_ids)
 
-        for r in rows[:_TOP_K_RELATED]:
-            faq_id   = str(r.get("고유번호", ""))
-            question = str(r.get(q_col, "") or r.get("질문(한국어)", ""))
-            if faq_id and question:
-                results.append(RelatedFAQ(
-                    faq_id   = faq_id,
-                    question = question,
-                    language = language,
-                ))
-        return results
+        for c in candidates:
+            meta = c.get("metadata", {}) or {}
+            faq_id = str(meta.get("faq_id", "")).strip()
+            score = float(c.get("score") or 0.0)
+            if not faq_id or faq_id in seen_ids:
+                continue
+            if score < _MIN_SOURCE_SCORE:
+                continue
+
+            question = f"FAQ-{faq_id}"
+            answer = ""
+            try:
+                row = faq_sheet_manager.get_faq_by_id(faq_id)
+                if row:
+                    question = str(row.get(q_col, "") or row.get("질문(한국어)", "")).strip() or question
+                    answer = str(row.get(a_col, "") or row.get("답변(한국어)", "")).strip()
+            except Exception:
+                pass
+
+            ref = RelatedFAQ(
+                faq_id=faq_id,
+                question=question,
+                language=language,
+            )
+            relaxed.append(ref)
+
+            if keywords and not self._has_keyword_overlap(f"{question} {answer}", keywords):
+                continue
+
+            strict.append(ref)
+            seen_ids.add(faq_id)
+            if len(strict) >= _TOP_K_RELATED:
+                break
+
+        if strict:
+            return strict[:_TOP_K_RELATED]
+
+        dedup_relaxed: list[RelatedFAQ] = []
+        used_ids: set[str] = set(exclude_ids)
+        for item in relaxed:
+            if item.faq_id in used_ids:
+                continue
+            dedup_relaxed.append(item)
+            used_ids.add(item.faq_id)
+            if len(dedup_relaxed) >= _TOP_K_RELATED:
+                break
+        return dedup_relaxed
 
     def _find_related_faqs_from_chunks(
         self, chunks: list[dict], language: Language, query: str
