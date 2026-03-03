@@ -120,6 +120,7 @@ _MAX_HISTORY = 6        # 최근 N개 메시지만 유지 (토큰 절약)
 _TOP_K_CHUNKS = 5
 _TOP_K_RELATED = 3     # 관련 FAQ 최대 수
 _MIN_SOURCE_SCORE = 0.35  # 출처로 노출할 최소 유사도
+_KOREAN_JOSA_SUFFIXES = ("으로", "에서", "에게", "께서", "까지", "부터", "처럼", "보다", "하고", "이며", "에", "은", "는", "이", "가", "을", "를", "도", "과", "와", "로", "의")
 
 
 # ---------------------------------------------------------------------------
@@ -223,6 +224,12 @@ class ChatService:
                         existing_ids.add(item.faq_id)
                         if len(related_faqs) >= _TOP_K_RELATED:
                             break
+
+                # 3-3) 출처가 비면 상위 FAQ 청크 1건은 반드시 표기
+                if not related_faqs:
+                    fallback = self._fallback_source_from_chunks(chunks, language)
+                    if fallback:
+                        related_faqs = [fallback]
 
                 # 4) OpenAI GPT 답변 생성 - 성능 측정
                 with llm_timer:
@@ -412,14 +419,42 @@ class ChatService:
         """질문 문장에서 출처 필터링용 키워드 추출."""
         stopwords = {"대해", "알려줘", "알려주세요", "문의", "질문", "어떻게", "무엇", "인가요", "해주세요"}
         tokens = [t.strip().lower() for t in re.split(r"[\s,./!?()\[\]{}]+", query) if t.strip()]
+        normalized_tokens: list[str] = []
+        for t in tokens:
+            norm = t
+            for suffix in _KOREAN_JOSA_SUFFIXES:
+                if norm.endswith(suffix) and len(norm) > len(suffix) + 1:
+                    norm = norm[: -len(suffix)]
+                    break
+            normalized_tokens.append(norm)
         # 2자 이상 토큰만 사용
-        tokens = [t for t in tokens if len(t) >= 2 and t not in stopwords]
+        tokens = [t for t in normalized_tokens if len(t) >= 2 and t not in stopwords]
         return tokens
 
     @staticmethod
     def _has_keyword_overlap(text: str, keywords: list[str]) -> bool:
         low = text.lower()
-        return any(k in low for k in keywords)
+        return any((k in low) or (low in k) for k in keywords)
+
+    def _fallback_source_from_chunks(
+        self, chunks: list[dict], language: Language
+    ) -> RelatedFAQ | None:
+        """필터링 결과가 비었을 때 상위 FAQ 청크 1건을 출처로 보장."""
+        q_col = "질문(중국어)" if language == Language.ZH else "질문(한국어)"
+        for c in chunks:
+            meta = c.get("metadata", {}) or {}
+            faq_id = str(meta.get("faq_id", "")).strip()
+            if not faq_id:
+                continue
+            question = f"FAQ-{faq_id}"
+            try:
+                row = faq_sheet_manager.get_faq_by_id(faq_id)
+                if row:
+                    question = str(row.get(q_col, "") or row.get("질문(한국어)", "")).strip() or question
+            except Exception:
+                pass
+            return RelatedFAQ(faq_id=faq_id, question=question, language=language)
+        return None
 
 
 chat_service = ChatService()
