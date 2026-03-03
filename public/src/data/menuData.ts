@@ -36,7 +36,7 @@ export const categories: Category[] = [
       { id: 'visa-1', label: { ko: '비자관련', zh: '签证相关' } },
       { id: 'visa-2', label: { ko: '체류관련', zh: '滞留相关' } },
       { id: 'visa-3', label: { ko: '외국인등록증', zh: '外国人登录证' } },
-      { id: 'visa-4', label: { ko: '비교과프로그램', zh: '比较课外项目' } },
+      { id: 'visa-4', label: { ko: '멘토링프로그램', zh: '导师辅导项目' } },
     ],
   },
   {
