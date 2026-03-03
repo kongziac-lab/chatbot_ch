@@ -119,6 +119,7 @@ _CHAT_PROMPT_ZH = textwrap.dedent("""\
 _MAX_HISTORY = 6        # 최근 N개 메시지만 유지 (토큰 절약)
 _TOP_K_CHUNKS = 5
 _TOP_K_RELATED = 3     # 관련 FAQ 최대 수
+_MIN_SOURCE_SCORE = 0.35  # 출처로 노출할 최소 유사도
 
 
 # ---------------------------------------------------------------------------
@@ -211,7 +212,7 @@ class ChatService:
                 # 3) 관련 FAQ 출처 구성
                 #    - 1순위: 실제 검색에 사용된 FAQ 청크 metadata(faq_id)
                 #    - 2순위: 질문 키워드 기반 보조 검색
-                related_faqs = self._find_related_faqs_from_chunks(chunks, language)
+                related_faqs = self._find_related_faqs_from_chunks(chunks, language, message)
                 if len(related_faqs) < _TOP_K_RELATED:
                     keyword_related = self._find_related_faqs(message, language)
                     existing_ids = {f.faq_id for f in related_faqs}
@@ -361,17 +362,21 @@ class ChatService:
         return results
 
     def _find_related_faqs_from_chunks(
-        self, chunks: list[dict], language: Language
+        self, chunks: list[dict], language: Language, query: str
     ) -> list[RelatedFAQ]:
         """검색에 실제 사용된 FAQ 청크의 faq_id를 출처로 변환."""
         q_col = "질문(중국어)" if language == Language.ZH else "질문(한국어)"
         results: list[RelatedFAQ] = []
         seen_ids: set[str] = set()
+        keywords = self._extract_query_keywords(query)
 
         for c in chunks:
             meta = c.get("metadata", {}) or {}
             faq_id = str(meta.get("faq_id", "")).strip()
+            score = float(c.get("score") or 0.0)
             if not faq_id or faq_id in seen_ids:
+                continue
+            if score < _MIN_SOURCE_SCORE:
                 continue
 
             question = ""
@@ -384,6 +389,9 @@ class ChatService:
 
             if not question:
                 question = f"FAQ-{faq_id}"
+            elif keywords and not self._has_keyword_overlap(question, keywords):
+                # 질문 키워드와 겹치지 않으면 출처 표기에서 제외
+                continue
 
             results.append(
                 RelatedFAQ(
@@ -398,6 +406,20 @@ class ChatService:
                 break
 
         return results
+
+    @staticmethod
+    def _extract_query_keywords(query: str) -> list[str]:
+        """질문 문장에서 출처 필터링용 키워드 추출."""
+        stopwords = {"대해", "알려줘", "알려주세요", "문의", "질문", "어떻게", "무엇", "인가요", "해주세요"}
+        tokens = [t.strip().lower() for t in re.split(r"[\s,./!?()\[\]{}]+", query) if t.strip()]
+        # 2자 이상 토큰만 사용
+        tokens = [t for t in tokens if len(t) >= 2 and t not in stopwords]
+        return tokens
+
+    @staticmethod
+    def _has_keyword_overlap(text: str, keywords: list[str]) -> bool:
+        low = text.lower()
+        return any(k in low for k in keywords)
 
 
 chat_service = ChatService()
