@@ -29,7 +29,7 @@ export const categories: Category[] = [
   },
   {
     id: 'visa',
-    label: { ko: '비자/체류/비교과', zh: '签证/滞留/比较课外' },
+    label: { ko: '비자/체류/비교과', zh: '签证/滞留/课外活动' },
     color: 'from-amber-500 to-amber-600',
     icon: 'FileText',
     subCategories: [
