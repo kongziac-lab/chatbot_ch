@@ -38,6 +38,10 @@ export interface Message {
   type: 'bot' | 'user';
   content: string;
   timestamp: Date;
+  sourceRefs?: {
+    faq_id: string;
+    question: string;
+  }[];
   menuCards?: Category[];
   subMenuCards?: {
     categoryId: string;

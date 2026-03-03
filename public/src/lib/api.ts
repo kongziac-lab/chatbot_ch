@@ -13,9 +13,9 @@ export interface ChatResponse {
   answer: string;
   language: string;
   related_faqs: Array<{
+    faq_id: string;
     question: string;
-    answer: string;
-    category?: string;
+    language: Language;
   }>;
   session_id: string;
   confidence: 'high' | 'medium' | 'low';
@@ -125,6 +125,18 @@ export const faqApi = {
     const data: FAQListResponse = await response.json();
     console.log('API 응답 데이터:', data);
     return data.items;
+  },
+
+  /**
+   * FAQ 상세 조회
+   */
+  async getFAQById(faqId: string, language: Language = 'ko'): Promise<FAQItem> {
+    const url = `${API_BASE_URL}/api/v1/faqs/${encodeURIComponent(faqId)}?lang=${language}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`FAQ 상세 조회 실패: ${response.status}`);
+    }
+    return response.json();
   },
 };
 

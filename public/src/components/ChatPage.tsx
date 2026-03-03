@@ -170,6 +170,10 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
         type: 'bot',
         content: response.answer,
         timestamp: new Date(),
+        sourceRefs: (response.related_faqs || []).map((r) => ({
+          faq_id: r.faq_id,
+          question: r.question,
+        })),
       };
       
       setMessages((prev) => [...prev, botResponse]);
@@ -345,6 +349,31 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
     };
 
     setMessages((prev) => [...prev, userMessage, botResponse]);
+  };
+
+  const handleSourceClick = async (source: { faq_id: string; question: string }) => {
+    try {
+      const faq = await faqApi.getFAQById(source.faq_id, language);
+      const botResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'bot',
+        content: faq.answer,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, botResponse]);
+    } catch (error) {
+      console.error('출처 FAQ 조회 실패:', error);
+      const botResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'bot',
+        content:
+          language === 'ko'
+            ? '출처 FAQ를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'
+            : '无法加载来源FAQ，请稍后重试。',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, botResponse]);
+    }
   };
 
   const handleBackToMain = () => {
@@ -557,6 +586,27 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
                         </div>
                       </button>
                     ))}
+                  </div>
+                )}
+
+                {/* Source References */}
+                {message.sourceRefs && message.sourceRefs.length > 0 && (
+                  <div className="mt-3 pt-2 border-t border-gray-100">
+                    <p className="text-xs text-gray-500 mb-2">
+                      {language === 'ko' ? '출처' : '来源'}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {message.sourceRefs.map((src) => (
+                        <button
+                          key={src.faq_id}
+                          onClick={() => handleSourceClick(src)}
+                          className="text-xs px-2 py-1 rounded border border-blue-300 text-blue-600 hover:bg-blue-50 transition-colors"
+                          title={src.question}
+                        >
+                          {`FAQ-${src.faq_id}`}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
 
