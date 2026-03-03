@@ -28,6 +28,13 @@ const iconMap: { [key: string]: React.ElementType } = {
   Home,
 };
 
+const quickMenuBorderColors: Record<string, string> = {
+  admission: '#3b82f6', // 입학/졸업
+  academic: '#10b981',  // 학사/수업
+  visa: '#f59e0b',      // 비자/체류/비교과
+  life: '#ef4444',      // 생활/숙박
+};
+
 export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -609,7 +616,8 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
               <button
                 key={cat.id}
                 onClick={() => handleCategoryClick(cat.id)}
-                className="flex-shrink-0 px-4 py-2 bg-gray-100 hover:bg-kmu-blue hover:text-white rounded-full text-sm text-gray-700 transition-colors"
+                className="flex-shrink-0 px-4 py-2 bg-gray-100 hover:bg-kmu-blue hover:text-white rounded-full text-sm text-gray-700 transition-colors border"
+                style={{ borderColor: quickMenuBorderColors[cat.id] ?? '#d1d5db' }}
               >
                 {cat.label[language]}
               </button>
