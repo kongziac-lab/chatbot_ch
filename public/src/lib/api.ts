@@ -205,6 +205,15 @@ export function markdownToHtml(markdown: string, language: Language = 'ko'): str
         return `<div class="pl-8 my-1">${trimmed}</div>`;
       }
 
+      const startsWithText = /^[A-Za-z\u00C0-\u024F\u4E00-\u9FFF\u3400-\u4DBF\uAC00-\uD7AF]/.test(trimmed);
+      if (startsWithText) {
+        prevWasNumbered = false;
+        return `<div class="flex items-start gap-2 my-1">
+          <span class="text-blue-600 font-semibold leading-none mt-1">•</span>
+          <span class="flex-1">${trimmed}</span>
+        </div>`;
+      }
+
       prevWasNumbered = false;
       return `<div>${trimmed}</div>`;
     })
