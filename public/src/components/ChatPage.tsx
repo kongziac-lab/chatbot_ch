@@ -608,7 +608,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
             <button
               onClick={handleBackToMain}
-              className="flex-shrink-0 px-4 py-2 bg-gray-100 hover:bg-kmu-blue hover:text-white rounded-full text-sm text-gray-700 transition-colors border border-gray-300"
+              className="flex-shrink-0 px-4 py-2 bg-gray-100 hover:bg-kmu-blue hover:text-white rounded-full text-sm text-gray-700 transition-colors border border-black"
             >
               {translations.mainMenu[language]}
             </button>
