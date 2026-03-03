@@ -29,13 +29,14 @@ export const categories: Category[] = [
   },
   {
     id: 'visa',
-    label: { ko: '비자/체류', zh: '签证/滞留' },
+    label: { ko: '비자/체류/비교과', zh: '签证/滞留/比较课外' },
     color: 'from-amber-500 to-amber-600',
     icon: 'FileText',
     subCategories: [
       { id: 'visa-1', label: { ko: '비자관련', zh: '签证相关' } },
       { id: 'visa-2', label: { ko: '체류관련', zh: '滞留相关' } },
       { id: 'visa-3', label: { ko: '외국인등록증', zh: '外国人登录证' } },
+      { id: 'visa-4', label: { ko: '비교과프로그램', zh: '比较课外项目' } },
     ],
   },
   {
