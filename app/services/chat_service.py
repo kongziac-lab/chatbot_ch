@@ -208,8 +208,20 @@ class ChatService:
                     "low"
                 )
 
-                # 3) 관련 FAQ 검색 (Sheets 캐시)
-                related_faqs = self._find_related_faqs(message, language)
+                # 3) 관련 FAQ 출처 구성
+                #    - 1순위: 실제 검색에 사용된 FAQ 청크 metadata(faq_id)
+                #    - 2순위: 질문 키워드 기반 보조 검색
+                related_faqs = self._find_related_faqs_from_chunks(chunks, language)
+                if len(related_faqs) < _TOP_K_RELATED:
+                    keyword_related = self._find_related_faqs(message, language)
+                    existing_ids = {f.faq_id for f in related_faqs}
+                    for item in keyword_related:
+                        if item.faq_id in existing_ids:
+                            continue
+                        related_faqs.append(item)
+                        existing_ids.add(item.faq_id)
+                        if len(related_faqs) >= _TOP_K_RELATED:
+                            break
 
                 # 4) OpenAI GPT 답변 생성 - 성능 측정
                 with llm_timer:
@@ -346,6 +358,45 @@ class ChatService:
                     question = question,
                     language = language,
                 ))
+        return results
+
+    def _find_related_faqs_from_chunks(
+        self, chunks: list[dict], language: Language
+    ) -> list[RelatedFAQ]:
+        """검색에 실제 사용된 FAQ 청크의 faq_id를 출처로 변환."""
+        q_col = "질문(중국어)" if language == Language.ZH else "질문(한국어)"
+        results: list[RelatedFAQ] = []
+        seen_ids: set[str] = set()
+
+        for c in chunks:
+            meta = c.get("metadata", {}) or {}
+            faq_id = str(meta.get("faq_id", "")).strip()
+            if not faq_id or faq_id in seen_ids:
+                continue
+
+            question = ""
+            try:
+                row = faq_sheet_manager.get_faq_by_id(faq_id)
+                if row:
+                    question = str(row.get(q_col, "") or row.get("질문(한국어)", "")).strip()
+            except Exception:
+                question = ""
+
+            if not question:
+                question = f"FAQ-{faq_id}"
+
+            results.append(
+                RelatedFAQ(
+                    faq_id=faq_id,
+                    question=question,
+                    language=language,
+                )
+            )
+            seen_ids.add(faq_id)
+
+            if len(results) >= _TOP_K_RELATED:
+                break
+
         return results
 
 
