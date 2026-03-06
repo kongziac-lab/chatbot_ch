@@ -729,27 +729,39 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
       {/* Input Area */}
       <footer className="bg-white border-t border-gray-200 px-4 py-4">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
-          <div className="flex-1 relative">
+          <div
+            className={`flex-1 relative rounded-full p-[1.5px] bg-gradient-to-r from-blue-500 via-emerald-500 via-amber-500 to-rose-500 ${
+              isOnline ? 'online-gradient-border' : ''
+            }`}
+          >
             <input
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
               placeholder={translations.placeholder[language]}
-              className="chat-input w-full px-4 py-3 bg-gray-100 rounded-full text-sm text-gray-700 placeholder-gray-400 outline-none transition-all"
+              className="chat-input w-full px-4 py-3 bg-white rounded-full text-sm text-gray-700 placeholder-gray-400 outline-none transition-all"
             />
           </div>
-          <button
-            onClick={handleSendMessage}
-            disabled={!inputText.trim()}
-            className={`p-3 rounded-full transition-all ${
-              inputText.trim()
-                ? 'bg-kmu-blue text-white hover:bg-kmu-middleBlue'
-                : 'bg-gray-200 text-gray-400'
-            }`}
-          >
-            <Send className="w-5 h-5" />
-          </button>
+          {inputText.trim() ? (
+            <div className="rounded-full p-[1.5px] bg-gradient-to-r from-blue-500 via-emerald-500 via-amber-500 to-rose-500">
+              <button
+                onClick={handleSendMessage}
+                disabled={!inputText.trim()}
+                className="p-3 rounded-full bg-kmu-blue text-white hover:bg-kmu-middleBlue transition-all hover:scale-105 hover:shadow-[0_10px_20px_-8px_rgba(3,78,162,0.55)]"
+              >
+                <Send className="w-5 h-5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleSendMessage}
+              disabled={!inputText.trim()}
+              className="p-3 rounded-full transition-all bg-gray-200 text-gray-400"
+            >
+              <Send className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </footer>
     </div>
