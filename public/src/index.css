@@ -158,6 +158,41 @@
   filter: drop-shadow(0 4px 6px rgba(3, 78, 162, 0.2));
 }
 
+/* Landing logo animation */
+.landing-logo-shell {
+  background: linear-gradient(135deg, #3b82f6, #10b981, #f59e0b, #ef4444, #3b82f6);
+  background-size: 260% 260%;
+  animation: landingBorderFlow 7s ease-in-out infinite;
+}
+
+.landing-logo-mark {
+  animation: landingLogoFloat 3.8s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(3, 78, 162, 0.18));
+}
+
+@keyframes landingBorderFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes landingLogoFloat {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+    filter: drop-shadow(0 4px 8px rgba(3, 78, 162, 0.16));
+  }
+  50% {
+    transform: translateY(-5px) scale(1.01);
+    filter: drop-shadow(0 8px 14px rgba(3, 78, 162, 0.24));
+  }
+}
+
 /* Typing indicator */
 .typing-dot {
   animation: typingBounce 1.4s infinite ease-in-out both;
