@@ -158,38 +158,25 @@
   filter: drop-shadow(0 4px 6px rgba(3, 78, 162, 0.2));
 }
 
-/* Landing logo animation */
-.landing-logo-shell {
-  background: linear-gradient(135deg, #3b82f6, #10b981, #f59e0b, #ef4444, #3b82f6);
-  background-size: 260% 260%;
-  animation: landingBorderFlow 7s ease-in-out infinite;
+/* Landing logo frame subtle glow */
+.landing-logo-frame-glow {
+  animation: landingFrameGlow 3.6s ease-in-out infinite;
 }
 
-.landing-logo-mark {
-  animation: landingLogoFloat 3.8s ease-in-out infinite;
-  filter: drop-shadow(0 4px 8px rgba(3, 78, 162, 0.18));
-}
-
-@keyframes landingBorderFlow {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-@keyframes landingLogoFloat {
+@keyframes landingFrameGlow {
   0%, 100% {
-    transform: translateY(0px) scale(1);
-    filter: drop-shadow(0 4px 8px rgba(3, 78, 162, 0.16));
+    box-shadow:
+      0 12px 24px -14px rgba(59, 130, 246, 0.28),
+      0 8px 16px -12px rgba(16, 185, 129, 0.22),
+      0 10px 20px -14px rgba(245, 158, 11, 0.2),
+      0 9px 18px -14px rgba(239, 68, 68, 0.18);
   }
   50% {
-    transform: translateY(-5px) scale(1.01);
-    filter: drop-shadow(0 8px 14px rgba(3, 78, 162, 0.24));
+    box-shadow:
+      0 16px 28px -12px rgba(59, 130, 246, 0.34),
+      0 12px 20px -12px rgba(16, 185, 129, 0.26),
+      0 14px 22px -12px rgba(245, 158, 11, 0.24),
+      0 13px 22px -12px rgba(239, 68, 68, 0.22);
   }
 }
 

@@ -23,6 +23,12 @@ const languageOptions: LanguageOption[] = [
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ onSelectLanguage, onAdminClick }) => {
   const [selectedLang, setSelectedLang] = useState<Language>('ko');
+  const logoBorderBySide = {
+    borderTopColor: '#3b82f6',    // 파랑
+    borderRightColor: '#10b981',  // 초록
+    borderBottomColor: '#f59e0b', // 주황
+    borderLeftColor: '#ef4444',   // 빨강
+  };
 
   const handleStart = () => {
     onSelectLanguage(selectedLang);
@@ -40,10 +46,11 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ onSelectLang
       <div className="relative z-10 w-full max-w-md">
         {/* Logo Section */}
         <div className="flex flex-col items-center mb-10">
-          <div className="landing-logo-shell rounded-3xl p-[2px] mb-6">
-            <div className="bg-white rounded-3xl shadow-xl p-6">
-              <KMULogo size={120} className="landing-logo-mark" />
-            </div>
+          <div
+            className="landing-logo-frame-glow bg-white rounded-3xl shadow-xl p-6 mb-6 border-2"
+            style={logoBorderBySide}
+          >
+            <KMULogo size={120} />
           </div>
           <h1 className="text-2xl font-bold text-gray-800 text-center mb-2">
             {translations.welcome.ko}
