@@ -110,6 +110,26 @@
   box-shadow: 0 0 0 3px rgba(3, 78, 162, 0.2);
 }
 
+.online-gradient-border {
+  background-size: 220% 220%;
+  animation: onlineGradientShift 3.2s ease-in-out infinite;
+}
+
+@keyframes onlineGradientShift {
+  0% {
+    background-position: 0% 50%;
+    filter: drop-shadow(0 0 1px rgba(59, 130, 246, 0.25));
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.35));
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: drop-shadow(0 0 1px rgba(59, 130, 246, 0.25));
+  }
+}
+
 /* Language selector */
 .lang-option {
   transition: all 0.2s ease;
