@@ -40,6 +40,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState<boolean | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const renderBotAvatar = (size: number) => (
@@ -105,6 +106,30 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // 서버 헬스체크 기반 온라인 상태 표시
+  useEffect(() => {
+    let mounted = true;
+
+    const checkServerHealth = async () => {
+      try {
+        const health = await chatApi.healthCheck();
+        if (!mounted) return;
+        setIsOnline(String(health?.status || '').toLowerCase() === 'ok');
+      } catch (_error) {
+        if (!mounted) return;
+        setIsOnline(false);
+      }
+    };
+
+    checkServerHealth();
+    const intervalId = window.setInterval(checkServerHealth, 30000);
+
+    return () => {
+      mounted = false;
+      window.clearInterval(intervalId);
+    };
+  }, []);
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
@@ -387,6 +412,19 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
     setMessages((prev) => [...prev, botMessage]);
   };
 
+  const onlineStatusText =
+    language === 'ko'
+      ? isOnline === null
+        ? '확인중'
+        : isOnline
+        ? '온라인'
+        : '오프라인'
+      : isOnline === null
+      ? '检查中'
+      : isOnline
+      ? '在线'
+      : '离线';
+
   const renderCategoryCard = (category: typeof categories[0], index: number) => {
     const Icon = iconMap[category.icon] || MessageSquare;
 
@@ -479,9 +517,21 @@ export const ChatPage: React.FC<ChatPageProps> = ({ language, onBack }) => {
                 <h1 className="font-bold text-gray-800">
                   {translations.botTitle[language]}
                 </h1>
-                <p className="text-xs text-gray-500">
-                  {language === 'ko' ? '온라인' : '在线'}
-                </p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="relative flex h-2.5 w-2.5">
+                    {isOnline ? (
+                      <>
+                        <span className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75 animate-ping" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.9)]" />
+                      </>
+                    ) : (
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-gray-400" />
+                    )}
+                  </span>
+                  <p className={`text-xs font-medium ${isOnline ? 'text-blue-600' : 'text-gray-500'}`}>
+                    {onlineStatusText}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
