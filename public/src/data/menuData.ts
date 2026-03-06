@@ -54,6 +54,7 @@ export const categories: Category[] = [
       { id: 'life-7', label: { ko: '휴대폰', zh: '手机' } },
       { id: 'life-8', label: { ko: '도착보고', zh: '到达报告' } },
       { id: 'life-9', label: { ko: '방학생활', zh: '假期生活' } },
+      { id: 'life-10', label: { ko: '캠퍼스', zh: '校园' } },
     ],
   },
 ];

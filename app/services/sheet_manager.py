@@ -28,6 +28,8 @@ HEADER_ROW = [
     "우선순위", "조회수", "도움됨비율",
 ]
 REQUIRED_FAQ_FIELDS = set(HEADER_ROW)
+CATEGORY_MAJOR_LIFE = "생활/숙박"
+CATEGORY_MINOR_CAMPUS = "캠퍼스"
 
 
 @dataclass
@@ -172,6 +174,16 @@ class FAQSheetManager:
         return "".join(text.split())
 
     @classmethod
+    def _canonicalize_category(
+        cls, category_major: Any, category_minor: Any
+    ) -> tuple[str, str]:
+        major_text = cls._field_text(category_major)
+        minor_text = cls._field_text(category_minor)
+        if cls._normalize_match_text(minor_text) == cls._normalize_match_text(CATEGORY_MINOR_CAMPUS):
+            return CATEGORY_MAJOR_LIFE, minor_text or CATEGORY_MINOR_CAMPUS
+        return major_text, minor_text
+
+    @classmethod
     def _is_published_status(cls, value: Any) -> bool:
         normalized = cls._normalize_match_text(value)
         return normalized in {"게시중", "게시", "published", "공개", "active", "on"}
@@ -243,10 +255,14 @@ class FAQSheetManager:
 
     def _record_to_row(self, item: dict) -> dict[str, Any]:
         fields = item.get("fields", {})
+        category_major, category_minor = self._canonicalize_category(
+            fields.get("카테고리(대분류)"),
+            fields.get("카테고리(중분류)"),
+        )
         row = {
             "고유번호": self._field_text(fields.get("고유번호")),
-            "카테고리(대분류)": self._field_text(fields.get("카테고리(대분류)")),
-            "카테고리(중분류)": self._field_text(fields.get("카테고리(중분류)")),
+            "카테고리(대분류)": category_major,
+            "카테고리(중분류)": category_minor,
             "질문(한국어)": self._field_text(fields.get("질문(한국어)")),
             "답변(한국어)": self._field_text(fields.get("답변(한국어)")),
             "질문(중국어)": self._field_text(fields.get("질문(중국어)")),
@@ -294,6 +310,10 @@ class FAQSheetManager:
         scope: str | None = None,
         search: str | None = None,
     ) -> list[dict[str, Any]]:
+        category_major, category_minor = self._canonicalize_category(
+            category_major,
+            category_minor,
+        )
         cache_key = "published_faqs"
         cached = self._cache.get(cache_key)
 
@@ -372,6 +392,10 @@ class FAQSheetManager:
     ) -> str:
         faq_id = str(uuid.uuid4())
         now = self._now_iso()
+        category_major, category_minor = self._canonicalize_category(
+            category_major,
+            category_minor,
+        )
         fields = {
             "고유번호": faq_id,
             "카테고리(대분류)": category_major,
@@ -501,6 +525,60 @@ class FAQSheetManager:
                 },
             )
         return record_id
+
+    def normalize_campus_categories(self, apply: bool = False) -> dict[str, Any]:
+        """중분류가 '캠퍼스'인 레코드의 대분류를 '생활/숙박'으로 정규화한다."""
+        records = self._list_records(settings.lark_faq_table_id)
+        candidates: list[dict[str, str]] = []
+
+        for item in records:
+            record_id = str(item.get("record_id") or "").strip()
+            if not record_id:
+                continue
+
+            fields = item.get("fields", {})
+            faq_id = self._field_text(fields.get("고유번호"))
+            major = self._field_text(fields.get("카테고리(대분류)"))
+            minor = self._field_text(fields.get("카테고리(중분류)"))
+
+            if self._normalize_match_text(minor) != self._normalize_match_text(CATEGORY_MINOR_CAMPUS):
+                continue
+            if self._normalize_match_text(major) == self._normalize_match_text(CATEGORY_MAJOR_LIFE):
+                continue
+
+            candidates.append(
+                {
+                    "record_id": record_id,
+                    "faq_id": faq_id,
+                    "category_major_before": major,
+                    "category_minor": minor or CATEGORY_MINOR_CAMPUS,
+                }
+            )
+
+        updated = 0
+        if apply:
+            for candidate in candidates:
+                self._update_record(
+                    settings.lark_faq_table_id,
+                    candidate["record_id"],
+                    {
+                        "카테고리(대분류)": CATEGORY_MAJOR_LIFE,
+                        "수정일": self._now_iso(),
+                    },
+                )
+                updated += 1
+            if updated:
+                self._invalidate_cache()
+
+        return {
+            "ok": True,
+            "apply": apply,
+            "candidate_count": len(candidates),
+            "updated_count": updated,
+            "target_category_major": CATEGORY_MAJOR_LIFE,
+            "target_category_minor": CATEGORY_MINOR_CAMPUS,
+            "candidates": candidates,
+        }
 
 
 faq_sheet_manager = FAQSheetManager()

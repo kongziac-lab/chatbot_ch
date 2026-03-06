@@ -78,6 +78,19 @@ function onEdit(e) {
 
   var col = range.getColumn();
   var now = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+
+  // 카테고리(대/중분류) 변경 시 정규화 + 게시중 FAQ 자동 동기화
+  if (col === COL.CAT_MAJOR || col === COL.CAT_MINOR) {
+    _normalizeCampusCategory(sheet, row);
+
+    var categoryStatus = sheet.getRange(row, COL.STATUS).getValue();
+    if (categoryStatus === STATUS.PUBLISHED) {
+      sheet.getRange(row, COL.UPDATED_AT).setValue(now);
+      Logger.log("카테고리 변경 감지 | row=" + row + " | 증분 동기화 시작");
+      _triggerAutoSync();
+    }
+    return;
+  }
   
   // ═══════════════════════════════════════════════════════════
   // Case 1: 상태(I열) 변경
@@ -132,6 +145,19 @@ function onEdit(e) {
       Logger.log("FAQ 내용 변경 감지 | row=" + row + " | col=" + col + " | 증분 동기화 시작");
       _triggerAutoSync();
     }
+  }
+}
+
+/**
+ * 중분류가 '캠퍼스'이면 대분류를 반드시 '생활/숙박'으로 맞춘다.
+ */
+function _normalizeCampusCategory(sheet, row) {
+  var major = String(sheet.getRange(row, COL.CAT_MAJOR).getValue() || "").trim();
+  var minor = String(sheet.getRange(row, COL.CAT_MINOR).getValue() || "").trim();
+
+  if (minor === "캠퍼스" && major !== "생활/숙박") {
+    sheet.getRange(row, COL.CAT_MAJOR).setValue("생활/숙박");
+    Logger.log("카테고리 정규화 적용 | row=" + row + " | 대분류: " + major + " -> 생활/숙박");
   }
 }
 
